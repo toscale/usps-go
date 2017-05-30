@@ -2,17 +2,18 @@ package usps
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 func URLEncode(urlToEncode string) string {
 	return url.QueryEscape(urlToEncode)
 }
 
-func (U *USPS) GetRequest(requestURL string) []byte {
+func (U *USPS) GetRequest(requestURL string) ([]byte, error) {
 	currentURL := ""
 	if U.Production {
 		currentURL += prodbase
@@ -23,15 +24,14 @@ func (U *USPS) GetRequest(requestURL string) []byte {
 
 	resp, err := http.Get(currentURL)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return nil, errors.Wrap(err, "http get")
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	return body
+	return body, errors.Wrap(err, "read all")
 }
 
-func (U *USPS) GetRequestHTTPS(requestURL string) []byte {
+func (U *USPS) GetRequestHTTPS(requestURL string) ([]byte, error) {
 	currentURL := ""
 	if U.Production {
 		currentURL += prodhttpsbase
@@ -46,14 +46,10 @@ func (U *USPS) GetRequestHTTPS(requestURL string) []byte {
 	client := &http.Client{Transport: tr}
 	resp, err := client.Get(currentURL)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	if err != nil {
-		fmt.Println(err)
-		return nil
+		return nil, errors.Wrap(err, "get https")
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
-	return body
+	return body, errors.Wrap(err, "read all")
 }

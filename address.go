@@ -3,8 +3,9 @@ package usps
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type Address struct {
@@ -50,17 +51,15 @@ type CityStateLookupResponse struct {
 	} `xml:"ZipCode"`
 }
 
-func (U *USPS) AddressVerification(address Address) AddressValidateResponse {
-	result := AddressValidateResponse{}
+func (U *USPS) AddressVerification(address Address) (*AddressValidateResponse, error) {
+	result := &AddressValidateResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(address)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal address")
 	}
 
 	var requestURL bytes.Buffer
@@ -70,32 +69,29 @@ func (U *USPS) AddressVerification(address Address) AddressValidateResponse {
 	urlToEncode += "</AddressValidateRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequest(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequest(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get http")
 	}
 
 	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(bodyHeaderless), &result)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
 	if err != nil {
-		fmt.Printf("error: %v", err)
-		return result
+		return nil, errors.Wrap(err, "unmarshal response")
 	}
 
-	return result
+	return result, nil
 }
 
-func (U *USPS) ZipCodeLookup(address Address) ZipCodeLookupResponse {
-	result := ZipCodeLookupResponse{}
+func (U *USPS) ZipCodeLookup(address Address) (*ZipCodeLookupResponse, error) {
+	result := &ZipCodeLookupResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(address)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal address")
 	}
 
 	var requestURL bytes.Buffer
@@ -105,32 +101,29 @@ func (U *USPS) ZipCodeLookup(address Address) ZipCodeLookupResponse {
 	urlToEncode += "</ZipCodeLookupRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequest(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequest(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get request")
 	}
 
 	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(bodyHeaderless), &result)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
 	if err != nil {
-		fmt.Printf("error: %v", err)
-		return result
+		return nil, errors.Wrap(err, "unmarshal")
 	}
 
-	return result
+	return result, nil
 }
 
-func (U *USPS) CityStateLookup(zipcode ZipCode) CityStateLookupResponse {
-	result := CityStateLookupResponse{}
+func (U *USPS) CityStateLookup(zipcode ZipCode) (*CityStateLookupResponse, error) {
+	result := &CityStateLookupResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(zipcode)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal")
 	}
 
 	var requestURL bytes.Buffer
@@ -140,17 +133,16 @@ func (U *USPS) CityStateLookup(zipcode ZipCode) CityStateLookupResponse {
 	urlToEncode += "</CityStateLookupRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequest(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequest(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get http")
 	}
 
 	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(bodyHeaderless), &result)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
 	if err != nil {
-		fmt.Printf("error: %v", err)
-		return result
+		return nil, errors.Wrap(err, "unmarshal")
 	}
 
-	return result
+	return result, nil
 }

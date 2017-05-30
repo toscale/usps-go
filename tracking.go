@@ -3,8 +3,9 @@ package usps
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type TrackResponse struct {
@@ -13,11 +14,10 @@ type TrackResponse struct {
 	} `xml:"TrackInfo"`
 }
 
-func (U *USPS) TrackPackage(trackingID string) TrackResponse {
-	result := TrackResponse{}
+func (U *USPS) TrackPackage(trackingID string) (*TrackResponse, error) {
+	result := &TrackResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("username missing")
 	}
 
 	var requestURL bytes.Buffer
@@ -27,17 +27,12 @@ func (U *USPS) TrackPackage(trackingID string) TrackResponse {
 	urlToEncode += "</TrackRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequest(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequest(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get http")
 	}
 
 	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-	err := xml.Unmarshal([]byte(bodyHeaderless), &result)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		return result
-	}
-
-	return result
+	err = xml.Unmarshal([]byte(bodyHeaderless), &result)
+	return result, errors.Wrap(err, "unmarshal")
 }

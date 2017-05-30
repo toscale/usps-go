@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestRateDomestic(*testing.T) {
+func TestRateDomestic(t *testing.T) {
 	var usps USPS
 	usps.Username = os.Getenv("USPSUsername")
 	usps.Production = true
@@ -24,7 +26,8 @@ func TestRateDomestic(*testing.T) {
 	rate.Height = "15"
 	rate.Girth = "55"
 
-	output := usps.RateDomestic(rate)
+	output, err := usps.RateDomestic(rate)
+	require.Nil(t, err)
 	fmt.Println(output)
 
 	usps.Production = false

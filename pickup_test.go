@@ -3,6 +3,8 @@ package usps
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPickupAvailability(t *testing.T) {
@@ -19,10 +21,9 @@ func TestPickupAvailability(t *testing.T) {
 	pickup.ZIP5 = "77058"
 	pickup.ZIP4 = "1234"
 
-	output := usps.PickupAvailability(pickup)
-	if output.Error != "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupAvailability." {
-		t.Error("Pickup availability is incorrect.")
-	}
+	output, err := usps.PickupAvailability(pickup)
+	require.Nil(t, err)
+	require.Equal(t, output.Error, "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupAvailability.")
 }
 
 func TestPickupChange(t *testing.T) {
@@ -49,10 +50,9 @@ func TestPickupChange(t *testing.T) {
 	pickup.SpecialInstructions = ""
 	pickup.ConfirmationNumber = "WTC123456789"
 
-	output := usps.PickupChange(pickup)
-	if output.Error != "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupChange." {
-		t.Error("Pickup change is incorrect.")
-	}
+	output, err := usps.PickupChange(pickup)
+	require.Nil(t, err)
+	require.Equal(t, output.Error, "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupChange.")
 }
 
 func TestPickupInquiry(t *testing.T) {
@@ -70,8 +70,7 @@ func TestPickupInquiry(t *testing.T) {
 	pickup.ZIP4 = ""
 	pickup.ConfirmationNumber = "WTC123456789"
 
-	output := usps.PickupInquiry(pickup)
-	if output.Error != "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupInquiry." {
-		t.Error("Pickup change is incorrect.")
-	}
+	output, err := usps.PickupInquiry(pickup)
+	require.Nil(t, err)
+	require.Equal(t, output.Error, "API Authorization failure. User "+usps.Username+" is not authorized to use API CarrierPickupInquiry.")
 }

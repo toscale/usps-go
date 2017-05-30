@@ -3,8 +3,9 @@ package usps
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type RateRequest struct {
@@ -26,17 +27,15 @@ type RateRequest struct {
 type RateV4Response struct {
 }
 
-func (U *USPS) RateDomestic(rate RateRequest) RateV4Response {
-	result := RateV4Response{}
+func (U *USPS) RateDomestic(rate RateRequest) (*RateV4Response, error) {
+	result := &RateV4Response{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(rate)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal")
 	}
 
 	var requestURL bytes.Buffer
@@ -45,20 +44,13 @@ func (U *USPS) RateDomestic(rate RateRequest) RateV4Response {
 	urlToEncode += string(xmlOut)
 	urlToEncode += "</RateV4Request>"
 	requestURL.WriteString(URLEncode(urlToEncode))
-	fmt.Println(requestURL.String())
 
-	body := U.GetRequest(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequest(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get http")
 	}
 
 	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-	fmt.Println(bodyHeaderless)
-	err = xml.Unmarshal([]byte(bodyHeaderless), &result)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		return result
-	}
-
-	return result
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
+	return result, errors.Wrap(err, "unmarshal")
 }

@@ -3,6 +3,8 @@ package usps
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestAddressVerification(t *testing.T) {
@@ -14,10 +16,9 @@ func TestAddressVerification(t *testing.T) {
 	address.City = "Greenbelt"
 	address.State = "MD"
 
-	output := usps.AddressVerification(address)
-	if output.Address.Address2 != "6406 IVY LN" {
-		t.Error("Address Lookup is incorrect")
-	}
+	output, err := usps.AddressVerification(address)
+	require.Nil(t, err)
+	require.Equal(t, output.Address.Address2, "6406 IVY LN")
 }
 
 func TestZipCodeLookup(t *testing.T) {
@@ -29,10 +30,10 @@ func TestZipCodeLookup(t *testing.T) {
 	address.City = "Greenbelt"
 	address.State = "MD"
 
-	output := usps.ZipCodeLookup(address)
-	if output.Address.Address2 != "6406 IVY LN" {
-		t.Error("Zipcode Lookup is incorrect")
-	}
+	output, err := usps.ZipCodeLookup(address)
+	require.Nil(t, err)
+
+	require.Equal(t, output.Address.Address2, "6406 IVY LN")
 }
 
 func TestCityStateLookup(t *testing.T) {
@@ -42,8 +43,7 @@ func TestCityStateLookup(t *testing.T) {
 	var address ZipCode
 	address.Zip5 = "90210"
 
-	output := usps.CityStateLookup(address)
-	if output.ZipC.Zip5 != "90210" {
-		t.Error("City/State Lookup is incorrect")
-	}
+	output, err := usps.CityStateLookup(address)
+	require.Nil(t, err)
+	require.Equal(t, output.ZipC.Zip5, "90210")
 }

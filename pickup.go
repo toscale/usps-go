@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type PickUpRequest struct {
@@ -122,17 +124,15 @@ type Error struct {
 	Source      string `xml:"Source"`
 }
 
-func (U *USPS) PickupAvailability(pickup PickUpRequest) CarrierPickupAvailabilityResponse {
-	result := CarrierPickupAvailabilityResponse{}
+func (U *USPS) PickupAvailability(pickup PickUpRequest) (*CarrierPickupAvailabilityResponse, error) {
+	result := &CarrierPickupAvailabilityResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(pickup)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal")
 	}
 
 	var requestURL bytes.Buffer
@@ -142,41 +142,35 @@ func (U *USPS) PickupAvailability(pickup PickUpRequest) CarrierPickupAvailabilit
 	urlToEncode += "</CarrierPickupAvailabilityRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequestHTTPS(requestURL.String())
-	if body == nil {
-		return result
-	}
-
-	if len(result.Address2) > 0 {
-		bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-		err = xml.Unmarshal([]byte(bodyHeaderless), &result)
-		if err != nil {
-			fmt.Printf("error: %v", err)
-		}
-		return result
-	}
-	errorResult := Error{}
-	errorBody := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(errorBody), &errorResult)
+	body, err := U.GetRequestHTTPS(requestURL.String())
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		return nil, errors.Wrap(err, "get https")
 	}
-	result.Error = errorResult.Description
-	return result
 
+	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
+	fmt.Println(bodyHeaderless)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
+	if err != nil {
+		errorResult := Error{}
+		err = xml.Unmarshal([]byte(bodyHeaderless), &errorResult)
+		if err != nil {
+			return nil, errors.Wrap(err, "unmarshal error")
+		}
+		result.Error = errorResult.Description
+	}
+
+	return result, nil
 }
 
-func (U *USPS) PickupChange(pickup PickupChangeRequest) CarrierPickupChangeResponse {
-	result := CarrierPickupChangeResponse{}
+func (U *USPS) PickupChange(pickup PickupChangeRequest) (*CarrierPickupChangeResponse, error) {
+	result := &CarrierPickupChangeResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(pickup)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal")
 	}
 
 	var requestURL bytes.Buffer
@@ -186,40 +180,34 @@ func (U *USPS) PickupChange(pickup PickupChangeRequest) CarrierPickupChangeRespo
 	urlToEncode += "</CarrierPickupChangeRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequestHTTPS(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequestHTTPS(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get https")
 	}
 
-	if len(result.Address2) > 0 {
-		bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-		err = xml.Unmarshal([]byte(bodyHeaderless), &result)
-		if err != nil {
-			fmt.Printf("error: %v", err)
-		}
-		return result
-	}
-	errorResult := Error{}
-	errorBody := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(errorBody), &errorResult)
+	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		errorResult := Error{}
+		err = xml.Unmarshal([]byte(bodyHeaderless), &errorResult)
+		if err != nil {
+			return nil, errors.Wrap(err, "unmarshal error")
+		}
+		result.Error = errorResult.Description
 	}
-	result.Error = errorResult.Description
-	return result
+
+	return result, nil
 }
 
-func (U *USPS) PickupInquiry(pickup PickUpInquiryRequest) CarrierPickupInquiryResponse {
-	result := CarrierPickupInquiryResponse{}
+func (U *USPS) PickupInquiry(pickup PickUpInquiryRequest) (*CarrierPickupInquiryResponse, error) {
+	result := &CarrierPickupInquiryResponse{}
 	if U.Username == "" {
-		fmt.Println("Username is missing")
-		return result
+		return nil, errors.New("Username is missing")
 	}
 
 	xmlOut, err := xml.Marshal(pickup)
 	if err != nil {
-		fmt.Println(err)
-		return result
+		return nil, errors.Wrap(err, "marshal")
 	}
 
 	var requestURL bytes.Buffer
@@ -229,25 +217,22 @@ func (U *USPS) PickupInquiry(pickup PickUpInquiryRequest) CarrierPickupInquiryRe
 	urlToEncode += "</CarrierPickupInquiryRequest>"
 	requestURL.WriteString(URLEncode(urlToEncode))
 
-	body := U.GetRequestHTTPS(requestURL.String())
-	if body == nil {
-		return result
+	body, err := U.GetRequestHTTPS(requestURL.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "get https")
 	}
 
-	if len(result.Address2) > 0 {
-		bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
-		err = xml.Unmarshal([]byte(bodyHeaderless), &result)
+	bodyHeaderless := strings.Replace(string(body), xml.Header, "", 1)
+	err = xml.Unmarshal([]byte(bodyHeaderless), result)
+	if err == nil {
+		return result, nil
+		errorResult := Error{}
+		err = xml.Unmarshal([]byte(bodyHeaderless), &errorResult)
 		if err != nil {
-			fmt.Printf("error: %v", err)
+			return nil, errors.Wrap(err, "unmarshal error")
 		}
-		return result
+		result.Error = errorResult.Description
 	}
-	errorResult := Error{}
-	errorBody := strings.Replace(string(body), xml.Header, "", 1)
-	err = xml.Unmarshal([]byte(errorBody), &errorResult)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-	}
-	result.Error = errorResult.Description
-	return result
+
+	return result, nil
 }
